@@ -1,0 +1,235 @@
+---
+title: "Class_09"
+author: "Dan Vu (PID: A17380158)"
+format: pdf
+toc: TRUE
+---
+
+## PDB Statistics
+
+```{r pdbstats, message = FALSE}
+library(tidyverse)
+library(readr)
+pdbdata <- read_csv("~/Downloads/Data Export Summary.csv")
+head(pdbdata)
+```
+
+Download a CSV file from the PDB site (accessible from “Analyze” > “PDB Statistics” > “by Experimental Method and Molecular Type”. Move this CSV file into your RStudio project and use it to answer the following questions:
+
+> Q1: What percentage of structures in the PDB are solved by X-Ray and Electron Microscopy?
+
+```{r}
+n.total <- sum(pdbdata$Total)
+n.xray <- sum(pdbdata$`X-ray`)
+n.EM <- sum(pdbdata$EM)
+```
+X-Ray Percentage
+```{r}
+round(n.xray/n.total * 100,2)
+```
+81.48 percent
+
+EM Percentage
+```{r}
+round(n.EM/n.total * 100,2)
+```
+12.22 percent
+
+> Q2: What proportion of structures in the PDB are protein?
+
+```{r}
+n.protein <- pdbdata$Total[1]
+n.protein
+round(n.protein/n.total * 100,2)
+```
+86.05 percent
+
+## Exploring PDB Structures
+
+> Q3: Type HIV in the PDB website search box on the home page and determine how many HIV-1 protease structures are in the current PDB?
+
+There are 1,150 protease structures in the current PDB.
+
+### Package for structural bioinformatics
+```{r}
+library(bio3d)
+
+hiv <- read.pdb("1hsg")
+hiv
+```
+
+## Visualizing the HIV-1 Protease Structure
+
+Let's first use the Mol* viewer to explore this structure.
+
+![My first view of HIV-Pr](1HSG.png)
+
+> Q4. Water molecules normally have 3 atoms. Why do we see just one atom per water molecule in this structure?
+
+We only see one atom per water molecule in this structure to reduce the clutter of the image and to have the single oxygen atom present in all water molecules represent whereever a water molecule may exist relative to this protein. 
+
+> Q5. There is a critical “conserved” water molecule in the binding site. Can you identify this water molecule? What residue number does this water molecule have?
+
+Yes, I can identify this water molecule and its residue number is HOH 301.
+
+> Q6. Generate and save a figure clearly showing the two distinct chains of HIV-protease along with the ligand. You might also consider showing the catalytic residues ASP 25 in each chain and the critical water (we recommend “Ball & Stick” for these side-chains). Add this figure to your Quarto document.
+
+![View of HIV-Pr with 2 Aspartate residues marked](/Users/danvu/Desktop/BIMM_143/1HSGcopy2.png)
+
+
+## Introduction to Bio3d in R
+
+Extract the sequence
+```{r}
+pdbseq(hiv)
+```
+
+```{r}
+chainA_seq <- pdbseq(trim.pdb(hiv, chain="A"))
+```
+
+I can interactively view these PDB objects in R with the new **bio3dview** package. This is not yet on CRAN.
+
+To install this I can setup **pak** package and use it on **bio3dview** from GitHub. In my console I first run
+
+install.packages("pak")
+pak::pak("bioboot/bio3dview")
+
+
+```{r}
+library(bio3dview)
+hiv
+```
+
+> Q7. How many amino acid residues are there in this pdb object? 
+
+There are 198 amino acid residues in this pdb object.
+
+> Q8. Name one of the two non-protein residues? 
+
+One of the two non-protein residues is HOH (127)
+
+> Q9. How many protein chains are in this structure? 
+
+There are 2 protein chains.
+
+
+```{r}
+view.pdb(hiv)
+```
+
+We can also change some settings to edit this viewer.
+
+```{r}
+sel <- atom.select(hiv, resno=25)
+
+view.pdb(hiv, highlight = sel,
+         highlight.style = "spacefill",
+         colorScheme = "chain", 
+         col=c("blue", "orange"),
+         backgroundColor = "lightgreen")
+```
+
+## Predict protein flexibility
+
+We can run a bioinformatics calculation to predict protein dynamcis - i.e. functional motions.
+
+We will use the `nma()` function:
+```{r}
+adk <- read.pdb("6s36")
+adk
+```
+```{r}
+m <- nma(adk)
+m
+plot(m)
+```
+
+Generate a "trajectory" of predicted motion.
+```{r}
+mktrj(m, file="ADK_nma.pdb")
+```
+
+```{r}
+view.nma(m, pdb=adk)
+```
+
+## Comparative Structural Analysis of Adenylate Kinase
+
+### Install packages in the R console NOT your Rmd/Quarto file
+
+install.packages("bio3d")
+install.packages("NGLVieweR")
+
+install.packages("pak")
+pak::pak("bioboot/bio3dview")
+
+install.packages("BiocManager")
+BiocManager::install("msa")
+
+> Q10. Which of the packages above is found only on BioConductor and not CRAN? 
+
+The "msa" package is found only on BioConductor and not on CRAN.
+
+> Q11. Which of the above packages is not found on BioConductor or CRAN?: 
+
+The "bioboot/bio3dview" package is not found on BioConductor or CRAN.
+
+> Q12. True or False? Functions from the pak package can be used to install packages from GitHub and BitBucket?
+
+TRUE
+
+```{r}
+library(bio3d)
+aa <- get.seq("1ake_A")
+```
+
+> Q13. How many amino acids are in this sequence, i.e. how long is this sequence?
+
+There are 214 amino acids in this sequence.
+
+```{r}
+b <- blast.pdb(aa)
+```
+
+```{r}
+hits <- plot(b)
+```
+
+```{r}
+head(hits$pdb.id)
+```
+
+```{r}
+files <- get.pdb(hits$pdb.id, path="pdbs", split=TRUE, gzip=TRUE)
+```
+
+### Align and Superpose Structures
+
+```{r}
+pdbs <- pdbaln(files, fit = TRUE, exefile="msa")
+```
+
+```{r}
+ids <- basename.pdb(pdbs$id)
+plot(pdbs, labels=ids)
+```
+
+```{r}
+anno <- pdb.annotate(ids)
+unique(anno$source)
+```
+
+```{r}
+pc.xray <- pca(pdbs)
+plot(pc.xray)
+```
+
+```{r}
+rd <- rmsd(pdbs)
+hc.rd <- hclust(dist(rd))
+grps.rd <- cutree(hc.rd, k=3)
+plot(pc.xray, 1:2, col="grey50", bg=grps.rd, pch=21, cex=1)
+```
+
+
