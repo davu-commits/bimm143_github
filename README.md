@@ -5,3 +5,10 @@ Classwork for [BIMM143 at UC San Diego](https://bioboot.github.io/bimm143_F25/) 
 - Class 05 [Data Viz with ggplot](https://github.com/davu-commits/bimm143_github/blob/main/Class_05%20copy/Class_05.md)
 - Class 06 [Writing R functions]()
 - Class 07 [Machine Learning 1]()
+- Class 08
+- Class 09
+- Class 11
+- Class 12
+- Class 14
+- Class 16
+- Class 17
