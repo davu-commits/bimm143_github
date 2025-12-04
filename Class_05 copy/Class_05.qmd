@@ -1,7 +1,7 @@
 ---
 title: "Class_05: Data Viz with ggplot"
 author: "Dan Vu (PID: A17380158)"
-format: pdf
+format: gfm
 ---
 
 Today we are exploring the **ggplot** package and how to make nice figures in R.
