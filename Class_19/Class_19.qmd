@@ -1,0 +1,224 @@
+---
+title: "Class 19: Pertussis Class Project"
+author: "Dan Vu (PID: A17380158)"
+format: html
+---
+
+## Background
+
+Pertussis (more commonly known as whooping cough) is a highly contagious respiratory disease caused by the bacterium Bordetella pertussis.
+
+> Q1. With the help of the R “addin” package datapasta assign the CDC pertussis case number data to a data frame called cdc and use ggplot to make a plot of cases numbers over time.
+
+```{r}
+cdc <- data.frame(
+                                 year = c(1922L,1923L,1924L,1925L,
+                                          1926L,1927L,1928L,1929L,1930L,1931L,
+                                          1932L,1933L,1934L,1935L,1936L,
+                                          1937L,1938L,1939L,1940L,1941L,1942L,
+                                          1943L,1944L,1945L,1946L,1947L,
+                                          1948L,1949L,1950L,1951L,1952L,
+                                          1953L,1954L,1955L,1956L,1957L,1958L,
+                                          1959L,1960L,1961L,1962L,1963L,
+                                          1964L,1965L,1966L,1967L,1968L,1969L,
+                                          1970L,1971L,1972L,1973L,1974L,
+                                          1975L,1976L,1977L,1978L,1979L,1980L,
+                                          1981L,1982L,1983L,1984L,1985L,
+                                          1986L,1987L,1988L,1989L,1990L,
+                                          1991L,1992L,1993L,1994L,1995L,1996L,
+                                          1997L,1998L,1999L,2000L,2001L,
+                                          2002L,2003L,2004L,2005L,2006L,2007L,
+                                          2008L,2009L,2010L,2011L,2012L,
+                                          2013L,2014L,2015L,2016L,2017L,2018L,
+                                          2019L,2020L,2021L,2022L,2023L, 2024L),
+         cases = c(107473,164191,165418,152003,
+                                          202210,181411,161799,197371,
+                                          166914,172559,215343,179135,265269,
+                                          180518,147237,214652,227319,103188,
+                                          183866,222202,191383,191890,109873,
+                                          133792,109860,156517,74715,69479,
+                                          120718,68687,45030,37129,60886,
+                                          62786,31732,28295,32148,40005,
+                                          14809,11468,17749,17135,13005,6799,
+                                          7717,9718,4810,3285,4249,3036,
+                                          3287,1759,2402,1738,1010,2177,2063,
+                                          1623,1730,1248,1895,2463,2276,
+                                          3589,4195,2823,3450,4157,4570,
+                                          2719,4083,6586,4617,5137,7796,6564,
+                                          7405,7298,7867,7580,9771,11647,
+                                          25827,25616,15632,10454,13278,
+                                          16858,27550,18719,48277,28639,32971,
+                                          20762,17972,18975,15609,18617,
+                                          6124,2116,3044,7063, 22538)
+       )
+```
+
+```{r}
+ggplot(cdc) +
+  aes(year, cases) +
+  geom_point() +
+  geom_line()
+```
+
+Add some major milestones
+
+> Q2. Using the ggplot geom_vline() function add lines to your previous plot for the 1946 introduction of the wP vaccine and the 1996 switch to aP vaccine (see example in the hint below). What do you notice?
+
+I notice that after the 1996 switch to the aP vaccine, the number of cases rises to levels not seen since the mid 1900s.
+
+>Q3. Describe what happened after the introduction of the aP vaccine? Do you have a possible explanation for the observed trend?
+
+After the introduction of the aP vaccine, the number of cases rises. This could be due to a wide myriad of reasons, such as reduced effectiveness of the aP vaccine. 
+
+The 2020 lock-downs and social distancing measures also caused a sharp decrease in the number of cases because they prevented any respiratory spreading disease from propagating in society. 
+
+
+```{r}
+ggplot(cdc) +
+  aes(year, cases) +
+  geom_point() +
+  geom_line() +
+  geom_vline(xintercept = 1947, col = "red") +
+  geom_vline(xintercept = 1996, col ="darkgreen") +
+  geom_vline(xintercept = 2020, col = "blue")
+```
+
+The full introduction of the wP (whole-cell) Pertussis immunization in the mid 1940s led to a dramatic reduction in case numbers. 
+
+## The CMI-PB Project
+
+The mission of CMI-PB is to provide the scientific community with a comprehensive, high-quality and freely accessible resource of Pertussis booster vaccination.
+
+They make their data available via JSON format API endpoints - basically the database tables in a key:value type format like "infancy_vac":"wP". To read this we can use the 'read_json()' function from the **jsonlite** package.
+
+```{r}
+library(jsonlite)
+
+subject <- read_json(path="https://www.cmi-pb.org/api/v5_1/subject", simplifyVector = TRUE)
+head(subject)
+```
+
+> Q4. How many aP and wP infancy vaccinated subjects are in the dataset?
+
+> Q5. How many Male and Female subjects/patients are in the dataset?
+
+> Q6. What is the breakdown of race and biological sex (e.g. number of Asian females, White males etc…)?
+
+```{r}
+nrow(subject)
+```
+```{r}
+table(subject$infancy_vac)
+```
+
+```{r}
+table(subject$race, subject$biological_sex)
+```
+
+As we can see this tested population is not at all representative of the US as a whole. 
+
+```{r}
+specimen <- read_json("http://cmi-pb.org/api/v5_1/specimen", simplifyVector = T)
+ab_titer <- read_json("http://cmi-pb.org/api/v5_1/plasma_ab_titer", simplifyVector = T)
+```
+
+We need to "join" or link these tables with the 'subject' table so we can begin to analyze this data and know who a give Ab sample was collected for and when. 
+
+> Q9. Complete the code to join specimen and subject tables to make a new merged data frame containing all specimen records along with their associated subject details.
+
+```{r}
+library(dplyr)
+
+meta <- inner_join(subject, specimen)
+head(meta)
+```
+
+> Q10. Now using the same procedure join meta with titer data so we can further analyze this data in terms of time of visit aP/wP, male/female etc.
+
+```{r}
+ab_data <- inner_join(meta, ab_titer)
+head(ab_data)
+```
+
+> Q11. How many specimens (i.e. entries in abdata) do we have for each isotype?
+
+```{r}
+table(ab_data$isotype)
+```
+
+```{r}
+nrow(ab_data)
+```
+
+```{r}
+table(ab_data$antigen)
+```
+
+
+IgG is crucial for long-term immunity and responding to infections. 
+
+```{r}
+igg <- ab_data |>
+  filter(isotype == "IgG")
+```
+
+```{r}
+ggplot(igg) +
+  aes(MFI_normalised, antigen) +
+  geom_boxplot()
+```
+
+We can "facet" our plot by wP by aP
+
+```{r}
+ggplot(igg) +
+  aes(MFI_normalised, antigen) +
+  geom_boxplot() +
+  facet_wrap(~infancy_vac)
+```
+```{r}
+ggplot(igg) +
+  aes(MFI_normalised, antigen, col = infancy_vac) +
+  geom_boxplot() +
+  facet_wrap(~infancy_vac)
+```
+
+More advanced analysis digging into individual antigen responses over time: 
+```{r}
+filter(igg, antigen=="PT") |>
+  ggplot() +
+  aes(MFI_normalised, col=infancy_vac) +
+  #geom_boxplot(show.legend = ___) +
+  facet_wrap(vars(visit)) +
+  theme_bw()
+```
+
+```{r}
+ggplot(igg) +
+  aes(MFI_normalised, antigen, col=infancy_vac ) +
+  geom_boxplot(show.legend = FALSE) + 
+  facet_wrap(vars(visit), nrow=2) +
+  xlim(0,75) +
+  theme_bw()
+```
+
+```{r}
+abdata.21 <- ab_data %>% filter(dataset == "2021_dataset")
+
+abdata.21 %>% 
+  filter(isotype == "IgG",  antigen == "PT") %>%
+  ggplot() +
+    aes(x=planned_day_relative_to_boost,
+        y=MFI_normalised,
+        col=infancy_vac,
+        group=subject_id) +
+    geom_point() +
+    geom_line() +
+    geom_vline(xintercept=0, linetype="dashed") +
+    geom_vline(xintercept=14, linetype="dashed") +
+  labs(title="2021 dataset IgG PT",
+       subtitle = "Dashed lines indicate day 0 (pre-boost) and 14 (apparent peak levels)")
+```
+This plot shows the time course of Pertussis toxin (PT) antibody responses for a large set of wP (teal) compared to a large set of aP (red). There is a noticeable difference between the levels of antibody responses between these two datasets (wP being larger in magnitude), with both peaking at day 14.
+
+> Q18. Does this trend look similar for the 2020 dataset?

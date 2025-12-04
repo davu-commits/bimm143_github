@@ -1,0 +1,150 @@
+---
+title: "Class_11"
+author: "Dan Vu (PID: A17380158)"
+format: pdf
+toc: TRUE
+---
+
+## AlphaFold Data Base (AFDB)
+
+The EBI maintains the largest database of AlphaFold structure prediction models at: https://alphafold.ebi.ac.uk
+
+From last class we saw that the PDB had 244,290.
+
+The total number of protein sequences in UniProtKB is 199,579,901.
+
+```{r}
+244290/199579901 * 100
+```
+Only 0.12 percentage of all protein sequences have a structure.
+
+AFDB is attempting to fill in this gap in knowledge.
+
+There are two types of quality scores in AlphaFold; one for residues (i.e each amino acid) called PLDDT score. The second PAE score measure the confidence in the relative position of two residues (i.e a score for every pair of residues). 
+
+## Generating your own structure predictions
+
+Figure of 5 generated HIV-PR models
+
+![](HIV-PR_All_5_Models.png)
+
+And the top ranked model colored by chain
+
+![](HIV_PR_DIMER_Top_Model.png)
+
+And the top ranked model colored by confidence
+
+![](Top_Model_Confidence.png)
+
+This is the actual model
+
+![](Actual_Model.png)
+
+
+# Custom analysis of resulting models in R
+
+Read key result files into R. The first thing I need to know is what my results directory/foldre is called (i.e. it's name is different for every AlphaFold job)
+
+```{r}
+results.dir <- "HIV_PR_dimer_23119/"
+
+# File names for all PDB models
+pdb_files <- list.files(path=results.dir,
+                        pattern="*.pdb",
+                        full.names = TRUE)
+
+# Print our PDB file names
+basename(pdb_files)
+```
+
+```{r}
+library(bio3d)
+
+m1 <- read.pdb(pdb_files[1])
+pdbs <- pdbaln(pdb_files, fit=TRUE, exefile="msa")
+```
+
+```{r}
+rd <- rmsd(pdbs, fit=T)
+range(rd)
+```
+```{r}
+library(pheatmap)
+
+colnames(rd) <- paste0("m",1:5)
+rownames(rd) <- paste0("m",1:5)
+pheatmap(rd)
+```
+
+Now lets plot the pLDDT values across all models. Recall that this information is in the B-factor column of each model and that this is stored in our aligned pdbs object as pdbs$b with a row per structure/model.
+
+```{r}
+pdb <- read.pdb("1hsg")
+plotb3(pdbs$b[1,], typ="l", lwd=2, sse=pdb)
+points(pdbs$b[2,], typ="l", col="red")
+points(pdbs$b[3,], typ="l", col="blue")
+points(pdbs$b[4,], typ="l", col="darkgreen")
+points(pdbs$b[5,], typ="l", col="orange")
+abline(v=100, col="gray")
+```
+
+```{r}
+core <- core.find(pdbs)
+core.inds <- print(core, vol=0.5)
+xyz <- pdbfit(pdbs, core.inds, outpath="corefit_structures")
+```
+
+```{r}
+rf <- rmsf(xyz)
+
+plotb3(rf, sse=pdb)
+abline(v=100, col="gray", ylab="RMSF")
+```
+
+
+```{r}
+plot(m1$atom$b[m1$calpha], type = "l", ylim=c(0,100))
+```
+## Residue conservation from alignment file
+
+
+```{r}
+aln_file <- list.files(path=results.dir,
+                       pattern=".a3m$",
+                        full.names = TRUE)
+aln_file
+```
+
+```{r}
+aln <- read.fasta(aln_file[1], to.upper = TRUE)
+```
+
+How many sequences are in this alignment?
+
+```{r}
+dim(aln$ali)
+```
+
+We can score residue conservation in the alignment with the `conserv()` function.
+
+```{r}
+sim <- conserv(aln)
+
+plotb3(sim[1:99], sse=trim.pdb(m1, chain="A"),
+       ylab="Conservation Score")
+```
+
+```{r}
+con <- consensus(aln, cutoff = 0.9)
+con$seq
+```
+
+For a final visualization of these functionally important sites we can map this conservation score to the Occupancy column of a PDB file for viewing in molecular viewer programs such as Mol*, PyMol, VMD, chimera etc.
+
+```{r}
+m1.pdb <- read.pdb(pdb_files[1])
+occ <- vec2resno(c(sim[1:99], sim[1:99]), m1.pdb$atom$resno)
+write.pdb(m1.pdb, o=occ, file="m1_conserv.pdb")
+```
+
+![](Conserved_Region.png)

@@ -1,0 +1,32 @@
+---
+title: "Class 17 Questions 13&14"
+author: "Dan Vu (PID: A17380158)"
+format: pdf
+---
+
+> Q13: Read this file into R and determine the sample size for each genotype and their corresponding median expression levels for each of these genotypes.
+
+```{r}
+expr <- read.table("rs8067378_ENSG00000172057.6.txt")
+head(expr)
+```
+
+```{r}
+nrow(expr)
+table(expr$geno)
+```
+I can infer from the plot created that A/A has a higher relative expression value compared to    G/G. This means that the SNP does affect the expression of ORMDL3. There are 108 samples of A/A, 233 samples of A/G, and 121 samples of G/G.
+
+```{r}
+library(ggplot2)
+```
+
+>Q14: Generate a boxplot with a box per genotype, what could you infer from the relative expression value between A/A and G/G displayed in this plot? Does the SNP effect the expression of ORMDL3?
+
+```{r}
+ggplot(expr) +
+  aes(geno, exp, col = geno) +
+  geom_boxplot(notch = TRUE)
+```
+
+I can infer from the plot created that A/A has a higher relative expression value compared to    G/G. This means that the SNP does affect the expression of ORMDL3.

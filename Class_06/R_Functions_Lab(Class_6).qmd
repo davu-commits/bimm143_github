@@ -1,7 +1,7 @@
 ---
 title: "R Functions Lab (Class 06)"
 author: "Dan Vu (PID: A17380158)"
-format: pdf
+format: gfm
 ---
 
 ```{r}
